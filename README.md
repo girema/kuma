@@ -30,7 +30,6 @@ Make the script executable and run:
 chmod +x backup_cron.sh
 ./backup_cron.sh
 ```
-```
 Backups will be automatically created in the `/opt/kaspersky/kuma/backup` folder every Friday at 4 PM.
 
 ### 2. Clear KUMA Collectors log files
