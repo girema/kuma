@@ -1,14 +1,17 @@
 #!/bin/bash
 
-# Define the backup command
-BACKUP_COMMAND="curl -k --header 'Authorization: Bearer <token>' 'https://<ip_kuma>:7223/api/v1/system/backup' -o /path/to/backup/backup.tar.gz"
+# Get the current date in YYYY-MM-DD format
+BACKUP_DATE=$(date +%F)  # Example: 2024-09-20
+
+# Define the backup command with the date appended to the filename
+BACKUP_COMMAND="curl -k --header 'Authorization: Bearer <token>' 'https://<ip_kuma>:7223/api/v1/system/backup' -o /path/to/backup/backup_$BACKUP_DATE.tar.gz"
 
 # Step 1: Execute the command to perform the backup
 echo "Running the backup command..."
 eval "$BACKUP_COMMAND"
 
 if [[ $? -eq 0 ]]; then
-    echo "Backup successfully created."
+    echo "Backup successfully created: /path/to/backup/backup_$BACKUP_DATE.tar.gz"
 else
     echo "Backup command failed."
     exit 1
