@@ -15,3 +15,4 @@ Run the following command to make the script executable:
 
 ```bash
 chmod +x backup_cron.sh
+./backup_cron.sh
