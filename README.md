@@ -62,7 +62,6 @@ This script automates the process of collecting log files from various KUMA SIEM
    - Gathers log files from the following service directories:
      - `/opt/vendor/siem/collector`
      - `/opt/vendor/siem/correlator`
-     - `/opt/vendor/siem/clickhouse`
      - `/opt/vendor/siem/storage`
      - `/opt/vendor/siem/agent`
      - `/opt/vendor/siem/core`
