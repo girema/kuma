@@ -4,7 +4,6 @@
 SERVICE_DIRS=(
     "/opt/kaspersky/kuma/collector"
     "/opt/kaspersky/kuma/correlator"
-    "/opt/kaspersky/kuma/clickhouse"
     "/opt/kaspersky/kuma/storage"
     "/opt/kaspersky/kuma/agent"
     "/opt/kaspersky/kuma/core"
@@ -69,12 +68,20 @@ echo "Collecting system information..."
     ip a
     echo
 
+    echo "===== Routing Information (show route) ====="
+    ip route show
+    echo
+    
     echo "===== Hostname (hostname -f) ====="
     hostname -f
     echo
 
-    echo "===== Routing Information (show route) ====="
-    ip route show
+    echo "===== Hosts file (/etc/hosts) ====="
+    cat /etc/hosts
+    echo
+
+    echo "===== Resolve.conf (/etc/resolv.conf) ====="
+    cat /etc/resolv.conf
     echo
 
     echo "===== Service Status (systemctl status kuma-*) ====="
