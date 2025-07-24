@@ -1,0 +1,87 @@
+import socket
+import random
+import time
+from datetime import datetime
+
+# Configuration
+TARGET_IP = "192.0.2.1"  # Replace with your target IP
+TARGET_PORT = 514        # Replace with your target port
+INTERVAL = 1             # Seconds between logs
+
+# Fortinet device info
+DEVICE_NAME = "FGVMEVV3TDQZFXCF"
+DEVICE_ID = "FGVMEVV3TDQZFXCF"
+
+def generate_log():
+    now = datetime.utcnow()
+    timestamp = now.strftime("%Y-%m-%d time=%H:%M:%S")
+    eventtime = int(time.time_ns())
+
+    protocols = [
+        {"service": "DNS", "dstport": 53, "proto": 17, "transport": "UDP", "app": "DNS"},
+        {"service": "DHCP", "dstport": 67, "proto": 17, "transport": "UDP", "app": "DHCP"},
+        {"service": "HTTP", "dstport": 80, "proto": 6, "transport": "TCP", "app": "HTTP.BROWSER"},
+        {"service": "HTTPS", "dstport": 443, "proto": 6, "transport": "TCP", "app": "HTTPS"},
+        {"service": "SSH", "dstport": 22, "proto": 6, "transport": "TCP", "app": "SSH"},
+        {"service": "FTP", "dstport": 21, "proto": 6, "transport": "TCP", "app": "FTP"},
+        {"service": "SMTP", "dstport": 25, "proto": 6, "transport": "TCP", "app": "SMTP"},
+        {"service": "POP3", "dstport": 110, "proto": 6, "transport": "TCP", "app": "POP3"},
+        {"service": "IMAP", "dstport": 143, "proto": 6, "transport": "TCP", "app": "IMAP"},
+        {"service": "NTP", "dstport": 123, "proto": 17, "transport": "UDP", "app": "NTP"},
+        {"service": "SNMP", "dstport": 161, "proto": 17, "transport": "UDP", "app": "SNMP"},
+        {"service": "LDAP", "dstport": 389, "proto": 6, "transport": "TCP", "app": "LDAP"},
+        {"service": "RDP", "dstport": 3389, "proto": 6, "transport": "TCP", "app": "RDP"},
+        {"service": "TELNET", "dstport": 23, "proto": 6, "transport": "TCP", "app": "TELNET"},
+        {"service": "TFTP", "dstport": 69, "proto": 17, "transport": "UDP", "app": "TFTP"},
+        {"service": "SYSLOG", "dstport": 514, "proto": 17, "transport": "UDP", "app": "SYSLOG"},
+        {"service": "SIP", "dstport": 5060, "proto": 17, "transport": "UDP", "app": "SIP"},
+        {"service": "MYSQL", "dstport": 3306, "proto": 6, "transport": "TCP", "app": "MYSQL"},
+        {"service": "POSTGRES", "dstport": 5432, "proto": 6, "transport": "TCP", "app": "POSTGRES"},
+        {"service": "KERBEROS", "dstport": 88, "proto": 6, "transport": "TCP", "app": "KERBEROS"}
+    ]
+
+    external_targets = [
+        ("%.%.%.%", "Country"),
+        ("%.%.%.%", "Country")
+    ]
+
+    internal_targets = [
+        ("10.10.20.255", "Reserved"),
+        ("192.168.1.1", "Reserved")
+    ]
+
+    is_external = random.choice([True, False])
+    if is_external:
+        dstip, dstcountry = random.choice(external_targets)
+    else:
+        dstip, dstcountry = random.choice(internal_targets)
+
+    srcip = f"10.10.20.{random.randint(1, 254)}"
+    protoinfo = random.choice(protocols)
+
+    log = (
+        f"<189>date={now.strftime('%Y-%m-%d')} time={now.strftime('%H:%M:%S')} "
+        f"devname=\"{DEVICE_NAME}\" devid=\"{DEVICE_ID}\" eventtime={eventtime} "
+        f"tz=\"+0000\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" "
+        f"level=\"notice\" vd=\"root\" srcip={srcip} srcport={random.randint(1000, 65535)} "
+        f"srcintf=\"root\" srcintfrole=\"undefined\" dstip={dstip} dstport={protoinfo['dstport']} "
+        f"dstintf=\"port1\" dstintfrole=\"undefined\" srccountry=\"Reserved\" "
+        f"dstcountry=\"{dstcountry}\" sessionid={random.randint(1000000, 9999999)} "
+        f"proto={protoinfo['proto']} action=\"{'deny' if protoinfo['service'] == 'DHCP' else 'accept'}\" "
+        f"policyid=0 service=\"{protoinfo['service']}\" trandisp=\"noop\" app=\"{protoinfo['app']}\" "
+        f"duration={random.randint(0, 10)} sentbyte={random.randint(0, 4000)} "
+        f"rcvdbyte={random.randint(0, 4000)} sentpkt={random.randint(1, 10)} "
+        f"rcvdpkt={random.randint(1, 10)}"
+    )
+    return log
+
+def send_logs():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    while True:
+        log = generate_log()
+        sock.sendto(log.encode(), (TARGET_IP, TARGET_PORT))
+        print(log)
+        time.sleep(INTERVAL)
+
+if __name__ == "__main__":
+    send_logs()
