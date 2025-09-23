@@ -43,9 +43,6 @@ BEGIN
 END
 GO
 
-----------------------------------------------------------------------
--- 4. Drop database AuditTestDB (last step)
-----------------------------------------------------------------------
 PRINT '--- 4. Drop database AuditTestDB ---';
 IF DB_ID(N'AuditTestDB') IS NOT NULL
 BEGIN
