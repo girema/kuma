@@ -42,3 +42,19 @@ BEGIN
     DROP SERVER AUDIT Audit_ToFile;
 END
 GO
+
+----------------------------------------------------------------------
+-- 4. Drop database AuditTestDB (last step)
+----------------------------------------------------------------------
+PRINT '--- 4. Drop database AuditTestDB ---';
+IF DB_ID(N'AuditTestDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE [AuditTestDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE [AuditTestDB];
+    PRINT 'Database AuditTestDB has been dropped.';
+END
+ELSE
+BEGIN
+    PRINT 'Database AuditTestDB does not exist. Nothing to drop.';
+END
+GO
