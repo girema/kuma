@@ -27,3 +27,40 @@ ORDER BY event_time DESC;
 GO
 
 PRINT '--- Done ---';
+
+/*======================================================================
+  SQL Server Audit action_id Cheat Sheet
+  Use this reference when reading results from sys.fn_get_audit_file
+=======================================================================
+
+--- DML (Data Manipulation Language) ---
+SL  = SELECT
+IN  = INSERT
+UP  = UPDATE
+DL  = DELETE
+
+--- DDL (Data Definition Language) ---
+CR  = CREATE object
+DR  = DROP object
+AL  = ALTER object
+SC  = CREATE SCHEMA
+DS  = DROP SCHEMA
+SO  = CREATE/DROP/ALTER Server Object
+
+--- Security & Permissions ---
+LG  = LOGIN attempt (success/failure depending on group)
+PW  = LOGIN password change
+PR  = CREATE/ALTER/DROP USER (principal change)
+RO  = Role membership changes (ADD/DROP MEMBER)
+GR  = GRANT permission
+DV  = DENY permission
+RV  = REVOKE permission
+
+--- Audit & Server ---
+AD  = Audit configuration change
+AP  = Application role password change
+AU  = Audit action (record itself)
+SV  = Server permission change
+DB  = Database permission change
+
+=======================================================================*/
