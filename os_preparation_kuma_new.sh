@@ -11,40 +11,78 @@ show_progress() {
     local bar_length=50
     echo -n "["
     for ((i=0; i<bar_length; i++)); do
-        sleep $((duration / bar_length))
+        sleep $(awk "BEGIN {print $duration/$bar_length}")
         echo -n "="
     done
     echo -n "]"
     echo -e "${green} Done!${reset}"
 }
 
+# Function to install compat-openssl11 for Oracle Linux 9.2 and newer
+install_compat_openssl() {
+    sudo yum install -y compat-openssl11 > /dev/null 2>&1
+}
+
 # Function to check OS and version
 check_os_and_version() {
-    if grep -q "Oracle Linux" /etc/os-release; then
-        # Oracle Linux detected
-        version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2)
+    # Load OS information
+    . /etc/os-release
+
+    if [[ "$NAME" == "Oracle Linux Server" || "$NAME" == "Oracle Linux" ]]; then
+        version="$VERSION_ID"
         major_version=$(echo "$version" | awk -F. '{print $1}')
         minor_version=$(echo "$version" | awk -F. '{print $2}')
+
         if [[ "$major_version" -lt 8 || ( "$major_version" -eq 8 && "$minor_version" -lt 6 ) ]]; then
-            echo "Error: This script requires Oracle Linux version higher than 8.6."
+            echo "Error: This script requires Oracle Linux version 8.6 or higher."
             exit 1
         fi
-        if [[ "$major_version" -eq 9 && "$minor_version" -ge 2 ]] || [[ "$major_version" -gt 9 ]]; then
+
+        if [[ "$major_version" -eq 9 ]]; then
+            if [[ "$minor_version" -lt 2 ]]; then
+                echo "Error: Oracle Linux 9 versions lower than 9.2 are not supported."
+                exit 1
+            fi
             install_compat_openssl
+        elif [[ "$major_version" -gt 9 ]]; then
+            echo "Error: Oracle Linux versions higher than 9.* are not supported."
+            exit 1
         fi
+
         os="oracle"
-    elif grep -q "Ubuntu" /etc/os-release; then
-        # Ubuntu detected
+
+    elif [[ "$NAME" == "Ubuntu" ]]; then
+        version="$VERSION_ID"
+        major_version=$(echo "$version" | awk -F. '{print $1}')
+        minor_version=$(echo "$version" | awk -F. '{print $2}')
+
+        if [[ "$major_version" -lt 8 || ( "$major_version" -eq 8 && "$minor_version" -lt 6 ) ]]; then
+            echo "Error: This script requires Ubuntu version 8.6 or higher."
+            exit 1
+        fi
+
+        # Ubuntu 22.* vs 24.* package sets
+        if [[ "$major_version" -eq 22 ]]; then
+            echo "Detected Ubuntu $version (22.* series)"
+            extra_pkgs="libatk1.0-0 libgtk2.0-0 libatk-bridge2.0-0 libcups2 \
+                        libxcomposite-dev libxdamage1 libxrandr2 libgbm-dev \
+                        libxkbcommon-x11-0 libpangocairo-1.0-0 libasound2"
+        elif [[ "$major_version" -eq 24 ]]; then
+            echo "Detected Ubuntu $version (24.* series)"
+            extra_pkgs="libatk1.0-0 libgtk2.0-0 libatk-bridge2.0-0 libcups2 \
+                        libxcomposite-dev libxdamage1 libxrandr2 libgbm-dev \
+                        libxkbcommon-x11-0 libpangocairo-1.0-0 libasound2t64"
+        else
+            echo "Warning: Ubuntu version $version is supported (>= 8.6) but not explicitly tested."
+            extra_pkgs=""
+        fi
+
         os="ubuntu"
+
     else
         echo "Error: This script is intended for Oracle Linux or Ubuntu only."
         exit 1
     fi
-}
-
-# Function to install compat-openssl11 for Oracle Linux 9.2 and newer
-install_compat_openssl() {
-    sudo yum install -y compat-openssl11 > /dev/null 2>&1
 }
 
 # Function to check and disable IPv6
@@ -66,28 +104,49 @@ check_disable_ipv6() {
 install_packages() {
     if [ "$os" == "ubuntu" ]; then
         sudo apt update > /dev/null 2>&1
-        sudo apt install -y python3 python3-pip > /dev/null 2>&1
+        sudo apt install -y python3 python3-pip acl $extra_pkgs > /dev/null 2>&1
         sudo pip3 install netaddr > /dev/null 2>&1
-        sudo apt install -y acl
-        sudo wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb
-        sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb
     else
-        sudo yum install -y python3 > /dev/null 2>&1
+        sudo yum update -y > /dev/null 2>&1
+        sudo yum install -y python3 nss gtk2 atk libnss3.so libatk-1.0.so.0 \
+            libxkbcommon libdrm at-spi2-atk mesa-libgbm alsa-lib cups-libs \
+            libXcomposite libXdamage libXrandr > /dev/null 2>&1
         sudo pip3 install netaddr > /dev/null 2>&1
     fi
 }
 
-# Function to update SSH configuration
+# Function to update SSH configuration (ask before enabling root login)
 update_ssh_config() {
     sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak > /dev/null 2>&1
-    sudo sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config > /dev/null 2>&1
+    while true; do
+        read -p "Do you want to allow root login via SSH? (yes/no): " allow_root
+        case "$allow_root" in
+            [Yy][Ee][Ss]|[Yy])
+                sudo sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config > /dev/null 2>&1
+                echo "Root SSH login enabled."
+                break
+                ;;
+            [Nn][Oo]|[Nn])
+                sudo sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config > /dev/null 2>&1
+                echo "Root SSH login disabled."
+                break
+                ;;
+            *)
+                echo "Invalid input. Please enter yes or no."
+                ;;
+        esac
+    done
     sudo systemctl restart sshd > /dev/null 2>&1
 }
 
-# Function to enable and start chronyd (Oracle Linux) or ntp (Ubuntu)
+# Function to enable and start chronyd (Oracle Linux) or ntp/timesyncd (Ubuntu)
 enable_time_service() {
     if [ "$os" == "ubuntu" ]; then
-        sudo systemctl enable --now ntp > /dev/null 2>&1
+        if systemctl list-unit-files | grep -q ntp.service; then
+            sudo systemctl enable --now ntp > /dev/null 2>&1
+        else
+            sudo systemctl enable --now systemd-timesyncd > /dev/null 2>&1
+        fi
     else
         sudo systemctl enable --now chronyd > /dev/null 2>&1
     fi
