@@ -1,83 +1,22 @@
-## KUMA SIEM Automation Scripts
+### Scripts Overview
 
-This section is dedicated to KUMA SIEM and provides automation scripts that can assist with routine tasks.
-Below are the steps to set up and use these script:
-
-### 1. KUMA Backup via API `backup_cron.sh`
-
-## Backup and Schedule Script for KUMA SIEM
-
-This script automates the process of backing up KUMA SIEM and sets up a cron job to schedule regular backups.
-
-### Functionality
-
-1. **Run Backup Immediately**: 
-   - Executes a `curl` command to create a KUMA SIEM backup using the API.
-   - Saves the backup as `backup_<date>.tar.gz` in a specified folder, with the current date appended to the filename.
-
-2. **Schedule Weekly Backups**: 
-   - Sets up a cron job that runs the backup script every Friday at 4 PM.
-
-### Prerequisites
-
-- Ensure you have a valid API token for KUMA SIEM with appropriate backup privileges.
-- Replace `<token>` and `<ip_kuma>` in the script with your actual KUMA SIEM token and IP address.
-
-### Usage
-
-Make the script executable and run:
-```bash
-chmod +x backup_cron.sh
-./backup_cron.sh
-```
-Backups will be automatically created in the `/opt/kaspersky/kuma/backup` folder every Friday at 4 PM.
-
-### 2. Clear KUMA Collectors log files
-
-## Directory Formatter and Cleaner Script
-
-This script performs two tasks:
-
-1. **Part 1**: It scans the current directory, identifies all subdirectories, and generates a file called `directories.txt` containing formatted paths for each subdirectory. Each path is appended with `/opt/kaspersky/kuma/collector/<directory_name>/log/`.
-
-2. **Part 2**: It reads the paths from `directories.txt` and deletes all files inside each listed directory.
-
-### Usage
-
-Run the script in the directory you want to scan for subdirectories:
-```bash
-chmod +x clear_collector_logs.sh
-./clear_collector_logs.sh
-```
-
-### 3. KUMA Log collection for troubleshooting
-
-## Log Collection and Archiving Script for KUMA SIEM
-
-This script automates the process of collecting log files from various KUMA SIEM services, stores them in a designated troubleshooting directory, and compresses the logs into a `.tar.gz` archive. Additionally, it collects basic system information.
-
-### Functionality
-
-1. **Collect Logs**:
-   - Gathers log files from the following service directories:
-     - `/opt/vendor/siem/collector`
-     - `/opt/vendor/siem/correlator`
-     - `/opt/vendor/siem/storage`
-     - `/opt/vendor/siem/agent`
-     - `/opt/vendor/siem/core`
-   - Stores the collected logs in a troubleshooting folder named with the current timestamp.
-   
-2. **System Information**:
-   - Collects basic system information (`ip a`, `hostname`, routing info, service status, and recent logs) and stores it in `system_info.txt`.
-
-3. **Archiving and Cleanup**:
-   - Compresses the logs and system information into a `.tar.gz` archive.
-   - Removes the troubleshooting folder after the archive is created.
-
-### Usage
-
-Make the script executable and run:
-```bash
-chmod +x collect_logs.sh
-./collect_logs.sh
-```
+| File | Description |
+|---|---|
+| **WEC_GPO_policy.ps1** | PowerShell script for configuring Group Policy settings for Windows Event Collector (WEC). |
+| **backup_kuma_cron.sh** | Automates KUMA backup creation via API and sets up a cron job to run backups weekly (default: Friday 4 PM). |
+| **clear_collector_logs.sh** | Generates a list of collector log directories and deletes log files inside them. Useful for cleanup. |
+| **collect_logs.sh** | Collects logs from KUMA components (collector, correlator, storage, agent, core) plus system info, then archives them for troubleshooting. |
+| **fortinet_log_generator** | Test utility to generate Fortinet-style logs for integration or simulation purposes. |
+| **kuma_health_check.sh** | Checks the status and health of KUMA services to verify availability and functionality. |
+| **kuma_installation.sh** | Automates installation of KUMA, including environment preparation and dependency setup. |
+| **mssql_log_audit_app.sql** | SQL script for auditing MSSQL application-level events and logging them for SIEM ingestion. |
+| **mssql_log_audit_file.sql** | SQL script for auditing file-related activities in MSSQL. |
+| **mssql_log_audit_sql_cleanup.sql** | Cleans up SQL audit objects created during testing or configuration. |
+| **mssql_log_audit_sql_output.sql** | Script to output MSSQL audit logs into a file or table for SIEM integration. |
+| **os_preparation_kuma_new.sh** | Prepares a fresh operating system for KUMA installation (updates, dependencies, kernel/system settings). |
+| **os_preparation_kuma_old.sh** | Prepares an older operating system version for KUMA installation, ensuring compatibility. |
+| **restore_kuma.sh** | Restores KUMA from a backup (data and configuration recovery). |
+| **rsyslog_auditd_kuma.conf** | Rsyslog configuration for forwarding Linux auditd logs to KUMA. |
+| **ubuntu_disk_change_size.sh** | Expands disk partitions and filesystems on Ubuntu to increase storage size. |
+| **xml_forwarder_http.py** | Python script to forward XML logs to a remote HTTP endpoint (e.g., KUMA). |
+| **xml_forwarder_http_guide.md** | Documentation on how to configure and use the `xml_forwarder_http.py` script. |
