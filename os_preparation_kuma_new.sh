@@ -9,9 +9,11 @@ reset='\033[0m'
 show_progress() {
     local duration=$1
     local bar_length=50
+    local interval=$((duration / bar_length))
+    
     echo -n "["
     for ((i=0; i<bar_length; i++)); do
-        sleep $(awk "BEGIN {print $duration/$bar_length}")
+        sleep $interval
         echo -n "="
     done
     echo -n "]"
@@ -57,7 +59,7 @@ check_os_and_version() {
         minor_version=$(echo "$version" | awk -F. '{print $2}')
 
         if [[ "$major_version" -lt 8 || ( "$major_version" -eq 8 && "$minor_version" -lt 6 ) ]]; then
-            echo "Error: This script requires Ubuntu version 8.6 or higher."
+            echo "Error: This script requires Oracle Linux version 8.6 or higher."
             exit 1
         fi
 
@@ -73,8 +75,9 @@ check_os_and_version() {
                         libxcomposite-dev libxdamage1 libxrandr2 libgbm-dev \
                         libxkbcommon-x11-0 libpangocairo-1.0-0 libasound2t64"
         else
-            echo "Warning: Ubuntu version $version is supported (>= 8.6) but not explicitly tested."
+            echo "Warning: Ubuntu version $version is not supported."
             extra_pkgs=""
+            exit 1
         fi
 
         os="ubuntu"
