@@ -104,7 +104,7 @@ ALTER SERVER AUDIT Audit_ToAppLog WITH (STATE = ON);
 ----------------------------------------------------------------------
 PRINT '--- 3. Create SERVER AUDIT SPECIFICATION (users/roles/permissions/logins) ---';
 CREATE SERVER AUDIT SPECIFICATION [Audit_ToApplicationLog]
-FOR SERVER AUDIT [Audit_ToApplicationLog]
+FOR SERVER AUDIT [Audit_ToAppLog]
     ADD (SERVER_PRINCIPAL_CHANGE_GROUP),
     ADD (DATABASE_PRINCIPAL_CHANGE_GROUP),
     ADD (SERVER_ROLE_MEMBER_CHANGE_GROUP),
