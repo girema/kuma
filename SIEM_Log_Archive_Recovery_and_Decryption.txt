@@ -1,0 +1,153 @@
+SIEM LOG ARCHIVE – RECOVERY AND DECRYPTION GUIDE
+===============================================
+
+This document describes how SOC or IR teams can decrypt and restore
+encrypted SIEM log archives received from source systems.
+
+Decryption is performed ONLY on the SOC side using the secret GPG key.
+
+---------------------------------------------------------------------------
+1. PURPOSE
+---------------------------------------------------------------------------
+
+- Restore archived SIEM logs for analysis or investigation
+- Validate integrity and origin of archived logs
+- Support incident response and compliance activities
+
+---------------------------------------------------------------------------
+2. PREREQUISITES
+---------------------------------------------------------------------------
+
+- Linux system (SOC workstation or IR VM)
+- gpg installed
+- tar installed
+- SOC secret key file:
+  recipient_seckey.asc
+
+Encrypted archives:
+- Files with extension *.tar.gz.gpg
+
+---------------------------------------------------------------------------
+3. PREPARE WORKING ENVIRONMENT
+---------------------------------------------------------------------------
+
+Create working directories:
+
+mkdir -p ~/siem-archives/{keys,archives,out}
+cd ~/siem-archives
+
+Copy:
+- recipient_seckey.asc → keys/
+- encrypted archives   → archives/
+
+---------------------------------------------------------------------------
+4. IMPORT SOC SECRET KEY (ONE-TIME)
+---------------------------------------------------------------------------
+
+Import the secret key:
+
+gpg --import keys/recipient_seckey.asc
+
+Verify the key is present:
+
+gpg --list-secret-keys --keyid-format LONG
+
+Expected UID:
+Log Archive Recipient <log-archive@local>
+
+Optional fingerprint verification:
+
+gpg --fingerprint "log-archive@local"
+
+---------------------------------------------------------------------------
+5. DECRYPT AND EXTRACT ARCHIVES
+---------------------------------------------------------------------------
+
+IMPORTANT:
+Each archive must be processed individually.
+tar cannot safely extract multiple gzip streams from a single stdin.
+
+---------------------------------------------------------------------------
+5.1 SINGLE ARCHIVE
+---------------------------------------------------------------------------
+
+gpg --decrypt archives/file.tar.gz.gpg | tar -xz -C out
+
+---------------------------------------------------------------------------
+5.2 MULTIPLE ARCHIVES (RECOMMENDED)
+---------------------------------------------------------------------------
+
+for f in archives/*.tar.gz.gpg; do
+  echo "Processing $f"
+  gpg --decrypt "$f" | tar -xz -C out
+done
+
+---------------------------------------------------------------------------
+6. VERIFY RESTORED LOGS
+---------------------------------------------------------------------------
+
+Archives preserve original file paths.
+
+Example restored path:
+out/var/log/siem/audit.log
+
+List restored files:
+ls -lh out/var/log/siem/
+
+Open a log file:
+less out/var/log/siem/audit.log
+
+---------------------------------------------------------------------------
+7. OPTIONAL: FLAT EXTRACTION (NO PATHS)
+---------------------------------------------------------------------------
+
+To extract logs directly into out/:
+
+gpg --decrypt archives/file.tar.gz.gpg | tar -xz --strip-components=3 -C out
+
+---------------------------------------------------------------------------
+8. TROUBLESHOOTING
+---------------------------------------------------------------------------
+
+Error: gpg: decryption failed: No secret key
+Cause:
+- SOC secret key was not imported
+
+Fix:
+gpg --import keys/recipient_seckey.asc
+
+---
+
+Error: tar: not in gzip format
+Cause:
+- File is corrupted or not a valid archive
+
+Fix:
+file archives/*.gpg
+
+---------------------------------------------------------------------------
+9. SECURITY AND CLEANUP
+---------------------------------------------------------------------------
+
+Extracted logs may contain sensitive data.
+
+After analysis:
+
+rm -rf out/*
+
+If secure deletion is required:
+
+shred -u out/var/log/siem/*.log 2>/dev/null || true
+rm -rf out/*
+
+---------------------------------------------------------------------------
+10. SECURITY NOTES
+---------------------------------------------------------------------------
+
+- Only SOC possesses the secret GPG key
+- Source systems cannot decrypt archives
+- Secret keys must be stored securely
+- Secret keys must not be copied back to source systems
+
+---------------------------------------------------------------------------
+END OF DOCUMENT
