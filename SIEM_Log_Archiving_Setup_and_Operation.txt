@@ -1,0 +1,131 @@
+SIEM LOG ARCHIVING – SETUP AND OPERATION GUIDE
+=============================================
+
+This document describes how to prepare and operate automated log archiving
+and encryption on a Linux host running kuma-agent.
+
+The process encrypts log files using the SOC public GPG key and archives them
+on a scheduled basis via cron.
+
+---------------------------------------------------------------------------
+1. PURPOSE
+---------------------------------------------------------------------------
+
+- Ensure secure storage of SIEM log files
+- Meet GDPR / NIS2 requirements for data protection and integrity
+- Prevent plaintext log access on the source system
+- Enable SOC-side decryption and analysis only
+
+---------------------------------------------------------------------------
+2. PREREQUISITES
+---------------------------------------------------------------------------
+
+- Linux host (Oracle Linux / RHEL-compatible)
+- Root access
+- kuma-agent service installed and running
+- Python 3.10 or newer (required)
+- Installed system tools:
+  - gpg
+  - tar
+  - systemctl
+  - cron (crond)
+
+Directories used:
+- Source logs:        /var/log/siem/
+- Encrypted archives: /var/log/siem/archive/
+
+---------------------------------------------------------------------------
+3. INITIAL SETUP (ONE-TIME PER AGENT)
+---------------------------------------------------------------------------
+
+1) Copy the setup script to the server
+   Example location:
+   /var/log/siem/log_archive_setup.py
+
+2) Make the script executable
+   chmod +x log_archive_setup.py
+
+3) Run the setup script as root
+   python3 log_archive_setup.py
+
+4) During setup, the script will prompt for:
+   - kuma-agent ID (kuma-agent-%id%)
+   - Archive schedule:
+     * How many times per week (1–7)
+       - 7 = daily (time only)
+       - 1–6 = specific weekdays (1..7) + time
+   - Schedule preview and confirmation
+   - Reuse or generation of SOC GPG encryption key
+
+5) If no SOC key exists:
+   - A new GPG keypair is generated
+   - Public key is imported into the system keyring
+   - Secret key is exported to:
+     /root/log-archive-keys/recipient_seckey.asc
+
+IMPORTANT:
+- Securely transfer recipient_seckey.asc to SOC
+- Remove the secret key from this host if required by policy
+
+---------------------------------------------------------------------------
+4. WHAT SETUP CREATES
+---------------------------------------------------------------------------
+
+For each kuma-agent ID, the setup creates:
+
+- Worker script:
+  /usr/local/sbin/log_archive_encrypt_<id>.py
+
+- Cron job definition:
+  /etc/cron.d/log-archive-encrypt-<id>
+
+- Cron execution log:
+  /var/log/siem/archive/cron_<id>.log
+
+The setup script performs a self-test to confirm that encryption works
+with the installed public key.
+
+---------------------------------------------------------------------------
+5. AUTOMATED OPERATION (CRON)
+---------------------------------------------------------------------------
+
+On each scheduled execution:
+
+1) All *.log files in /var/log/siem/ are collected
+2) Each log file is:
+   - Archived into tar.gz
+   - Encrypted using the SOC public GPG key (RSA 4096)
+3) Encrypted archives are stored in:
+   /var/log/siem/archive/
+4) Plaintext log files are deleted after successful encryption
+5) The selected kuma-agent service is restarted
+
+No manual execution is required after the initial setup.
+
+---------------------------------------------------------------------------
+6. HOW TO VERIFY OPERATION
+---------------------------------------------------------------------------
+
+1) Check encrypted archives:
+   ls -lh /var/log/siem/archive/
+
+2) Check cron execution output:
+   cat /var/log/siem/archive/cron_<id>.log
+
+3) Verify cron configuration:
+   cat /etc/cron.d/log-archive-encrypt-<id>
+
+4) Verify service restart (optional):
+   systemctl status kuma-agent-<id>.service
+
+---------------------------------------------------------------------------
+7. IMPORTANT SECURITY NOTES
+---------------------------------------------------------------------------
+
+- Only the SOC public key is stored on this server
+- Decryption is NOT possible on the source system
+- SOC secret keys must never remain on the source host
+- Archive directory access is restricted to root
+
+---------------------------------------------------------------------------
+END OF DOCUMENT
